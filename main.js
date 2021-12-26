@@ -223,7 +223,7 @@ client.on('messageCreate', msg => {
 		//list bans
 	} else if (shortComp(msg.content, 'listbans', 'lb')) {
 		msg.guild.bans.fetch().then((b) => {
-			const row = new Discord.MessageActionRow().addComponents([
+			const row = b.size>8?new Discord.MessageActionRow().addComponents([
 				new Discord.MessageButton({
 					label: '<<',
 					style: 'SUCCESS',
@@ -244,12 +244,13 @@ client.on('messageCreate', msg => {
 					style: 'SUCCESS',
 					customId: '>>'
 				})
-			]);
-
+			]):{};
+			// ^ if bans is short, don't create the object but {} instead
 			msg.channel.send({
 				embeds: [genBansEmbed(0, b, 1)],
-				components: [row]
-			}).then((rsp) => {
+				//passing {} will cause error
+				components: b.size>8?[row]:undefined
+			}).then(b.size>8?(rsp) => {
 				let page = 0
 				const queueNavFilter = (i) => {
 					return ['<<', '<', '>', '>>'].includes(i.customId) && i.user.id === msg.author.id && i.message.id === rsp.id
@@ -268,13 +269,13 @@ client.on('messageCreate', msg => {
 							page = Math.max(page - 1, 0)
 							break;
 						case '>':
-							page = Math.min(page + 1, Math.max(b.size - 1, 0))
+							page = Math.min(page + 1, Math.max(Math.ceil(b.size/8) - 1, 0))
 							break;
 						case '>>':
-							page = Math.max(b.size - 8, 0)
+							page = Math.max(Math.ceil(b.size/8) - 1, 0)
 					}
 					i.update({
-						embeds: [genBansEmbed(page)]
+						embeds: [genBansEmbed(page,b)]
 					})
 				});
 
@@ -284,24 +285,23 @@ client.on('messageCreate', msg => {
 					})
 				});
 
-			})
+			}:()=>{})
 		})
 	}
 })
 
-function genBansEmbed(page, bans, perpage = 8) {
+function genBansEmbed(page, bans) {
 	let i = 0
 	let e = {
 		color: 0x00ff6e,
-		title: 'Liste aller gebannten Benutzer',
+		title: 'Liste aller gebannten User',
 		footer: {
-			text: `seite ${page+1}/${Math.ceil(bans.size/perpage)}`
+			text: `insgesamt: ${bans.size} • Seite ${page+1}/${Math.ceil(bans.size/8)}`
 		},
 		fields: []
 	}
 	for (const b of bans.values()) {
-		if (i >= page * perpage && i < (page + 1) * perpage) {
-			console.log(b.user.tag, b.reason)
+		if (i >= page * 8 && i < (page + 1) * 8) {
 			e.fields.push({
 				name: b.user.tag,
 				value: (b.reason ? `Grund: ${b.reason}` : 'kein Grund angegeben')
