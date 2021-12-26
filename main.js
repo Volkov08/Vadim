@@ -8,8 +8,8 @@ const client = new Discord.Client({
 	intents: ['GUILDS', 'GUILD_MEMBERS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS']
 })
 var stg = JSON.parse(fs.readFileSync('settings.json'));
-const shortComp = (m, l, s) => {
-	return m.trim() == stg.prefix + l || m.trim() == stg.prefix + s
+const shortComp = (m, l, s=null) => {
+	return m.content.split(' ')[0] == stg.prefix + l || (s && m.content.split(' ')[0] == stg.prefix + s)
 }
 
 const WELCOME_CHANNEL = '922934040611405844'
@@ -41,7 +41,7 @@ client.on('guildMemberAdd', member => {
 					})
 				},
 				image: {
-					url: IMAGE_URL
+					url: stg.image
 				}
 			}]
 		})
@@ -53,7 +53,7 @@ client.on('messageCreate', msg => {
 	console.log(msg)
 	//commands
 	//ping
-	if (shortComp(msg.content, 'ping', 'p')) {
+	if (shortComp(msg, 'ping', 'p')) {
 		let ping = Date.now() - msg.createdAt
 		msg.channel.send({
 			embeds: [{
@@ -63,7 +63,7 @@ client.on('messageCreate', msg => {
 		})
 
 		//help
-	} else if (shortComp(msg.content, 'help', 'h')) {
+	} else if (shortComp(msg, 'help', 'h')) {
 		msg.channel.send({
 			embeds: [{
 				title: 'Befehle:',
@@ -72,11 +72,17 @@ client.on('messageCreate', msg => {
 					url: IMAGE_URL
 				},
 				description: '*`Befehl #Zahl <Text> @User (optional)` `Kurzform von Befehl`*\n',
-				fields: [{
+				fields: [
+                                        {
+                                                name: 'Einstellungen',
+                                                value: `\`${stg.prefix}prefix <Prefix>\` \`${stg.prefix}pfx\` ändert den Prefix auf \`<Prefix>\`\n` +
+                                                        `\`${stg.prefix}image <BildURL>\` \`${stg.prefix}img\` ändert das Willkommensbild auf \`<BildURL>\`\n`
+                                        },
+					{
 						name: 'Moderation',
 						value: `\`${stg.prefix}purge #Nachrichten\` \`${stg.prefix}prg\` löscht \`#Nachrichten\` Nachrichten\n` +
 							`\`${stg.prefix}ban @User (<Grund>) \` bannt \`@User\` mit dem Grund \`<Grund>\`\n` +
-							`\`${stg.prefix}unban <UserTag>/#UseerID \` entbannt den User mit dem angegebenen Tag/der Angegebenen ID\n`
+							`\`${stg.prefix}unban <UserTag>/#UserID \` entbannt den User mit dem angegebenen Tag/der Angegebenen ID\n` +
 							`\`${stg.prefix}kick @User (<Grund>) \` kickt \`@User\` mit dem Grund \`<Grund>\`\n`
 					},
 					{
@@ -89,7 +95,7 @@ client.on('messageCreate', msg => {
 		})
 
 		//purge
-	} else if (shortComp(msg.content.split(" ")[0], 'purge', 'prg')) {
+	} else if (shortComp(msg, 'purge', 'prg')) {
 		let amount = parseInt(msg.content.split(" ")[1])
 		if (!amount) return
 		if (amount > 100) {
@@ -122,7 +128,7 @@ client.on('messageCreate', msg => {
 		}
 
 		//ban
-	} else if (msg.content.split(" ")[0] == stg.prefix + 'ban' && msg.mentions.members.size == 1) {
+	} else if (shortComp(msg,'ban') && msg.mentions.members.size == 1) {
 		let member = msg.mentions.members.first()
 		let reason = msg.content.substring(msg.content.indexOf(">") + 2)
 		if (member.id == msg.member.id) {
@@ -173,7 +179,7 @@ client.on('messageCreate', msg => {
 		}
 
 		//kick
-	} else if (msg.content.split(" ")[0] == stg.prefix + 'kick' && msg.mentions.members.size == 1) {
+	} else if (shortComp(msg,'kick') && msg.mentions.members.size == 1) {
 		let member = msg.mentions.members.first()
 		let reason = msg.content.substring(msg.content.indexOf(">") + 2)
 		if (member.id == msg.member.id) {
@@ -222,7 +228,7 @@ client.on('messageCreate', msg => {
 			})
 		}
 		//list bans
-	} else if (shortComp(msg.content, 'listbans', 'lb')) {
+	} else if (shortComp(msg, 'listbans', 'lb')) {
 		msg.guild.bans.fetch().then((b) => {
 			const row = b.size>6?new Discord.MessageActionRow().addComponents([
 				new Discord.MessageButton({
@@ -289,7 +295,7 @@ client.on('messageCreate', msg => {
 			}:()=>{})
 		})
 	//unban
-	} else if (msg.content.split(" ")[0] == stg.prefix + 'unban' && msg.content.split(" ")[1]){
+	} else if (shortComp(msg,'unban') && msg.content.split(" ")[1]){
 		if (!msg.member.permissions.has('BAN_MEMBERS')) {
                         msg.channel.send({
                                 embeds: [{
@@ -332,6 +338,92 @@ client.on('messageCreate', msg => {
 				}]})
 			})
 		}
+	} else if (shortComp(msg,'userinfo','ui') && msg.mentions.members.size == 1) {
+		let member = msg.mentions.members.first()
+		msg.channel.send({embeds:[{
+			color: member.roles.color?member.roles.color.color:0,
+			description:`**Info über ${member}**`,
+			thumbnail: {
+                                        url: member.displayAvatarURL({
+                                                format: 'png',
+                                                size: 512
+					})
+			},
+			fields:[
+				{
+					name:'User Tag',
+					value:member.user.tag
+				},
+				{
+					name:'Bot',
+					value:member.user.bot?'Ja':'Nein'
+				},
+				{
+					name:'Nick',
+					value:member.nickname||"kein Nick"
+				},
+				{
+					name:'Server beigetreten',
+					value:member.joinedAt.toString()
+				},
+				{
+					name:'Discord beigetreten',
+					value:member.user.createdAt.toString()
+				},
+				{
+					name:'Rollen',
+					value:member.roles.cache.size.toString()
+				},
+				{
+					name:'Höchste Rolle',
+					value:member.roles.highest.name
+				},
+				{
+					name:'Server booster',
+					value:member.premiumSince?(`seit ${member.premiumSince}`):'Nein'
+				},	
+			]
+		}]})
+	//prefix
+	} else if (shortComp(msg,'prefix','pfx') && msg.content.split(' ')[1]){
+		if (!msg.member.permissions.has('MANAGE_SERVER')) {
+                        msg.channel.send({
+                                embeds: [{
+                                        color: 0xff0000,
+                                        description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_SERVER`'
+                                }]
+                        })
+			return
+                }
+		stg.prefix = msg.content.split(' ')[1]	
+		fs.writeFileSync('settings.json', JSON.stringify(stg));
+		msg.channel.send({
+                	embeds: [{
+                        	color: 0x00ff6e,
+                        	description: `neuer prefix: ${stg.prefix}`        
+			}]
+                })
+
+	//image
+	} else if (shortComp(msg,'image','img') && msg.content.split(' ')[1]){
+		if (!msg.member.permissions.has('MANAGE_SERVER')) {
+                        msg.channel.send({
+                                embeds: [{
+                                        color: 0xff0000,
+                                        description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_SERVER`'
+                                }]
+                        })
+			return
+                }
+		stg.image = msg.content.split(' ')[1]
+		fs.writeFileSync('settings.json', JSON.stringify(stg));
+		msg.channel.send({
+                	embeds: [{
+                        	color: 0x00ff6e,
+                        	title: 'neues Willkommensbild',
+				image: {url: stg.image}
+			}]
+                })
 	}
 })
 
