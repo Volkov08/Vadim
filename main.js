@@ -19,10 +19,10 @@ const WELCOME_COLORS = [0xff0000, 0xff9100, 0xfbff00, 0x00ff37, 0x00ffd5, 0x0073
 
 client.once('ready', () => {
 	console.log(`Logged in as ${client.user.tag}!`)
-	client.user.setActivity('ur mom', {
+	client.user.setActivity('bin da!', {
 		type: 'PLAYING'
 	})
-	setInterval(changeActivity, 4000)
+	setInterval(changeActivity, 5000)
 })
 
 client.on('guildMemberAdd', member => {
@@ -50,7 +50,6 @@ client.on('guildMemberAdd', member => {
 
 client.on('messageCreate', msg => {
 	if (msg.author.bot) return
-	console.log(msg)
 	//commands
 	//ping
 	if (shortComp(msg, 'ping', 'p')) {
@@ -76,13 +75,14 @@ client.on('messageCreate', msg => {
                                         {
                                                 name: 'Einstellungen',
                                                 value: `\`${stg.prefix}prefix <Prefix>\` \`${stg.prefix}pfx\` ändert den Prefix auf \`<Prefix>\`\n` +
-                                                        `\`${stg.prefix}image <BildURL>\` \`${stg.prefix}img\` ändert das Willkommensbild auf \`<BildURL>\`\n`
+                                                        `\`${stg.prefix}image <BildURL>\` \`${stg.prefix}img\` ändert das Willkommensbild auf \`<BildURL>\`. URL muss mit http oder https beginnen und darf maximal 200 zeichen lang sein\n`
                                         },
 					{
 						name: 'Moderation',
 						value: `\`${stg.prefix}purge #Nachrichten\` \`${stg.prefix}prg\` löscht \`#Nachrichten\` Nachrichten\n` +
 							`\`${stg.prefix}ban @User (<Grund>) \` bannt \`@User\` mit dem Grund \`<Grund>\`\n` +
 							`\`${stg.prefix}unban <UserTag>/#UserID \` entbannt den User mit dem angegebenen Tag/der Angegebenen ID\n` +
+                                                	 `\`${stg.prefix}listbans\` \`${stg.prefix}lb\` listet alle gebannten User auf\n` +
 							`\`${stg.prefix}kick @User (<Grund>) \` kickt \`@User\` mit dem Grund \`<Grund>\`\n`
 					},
 					{
@@ -386,11 +386,11 @@ client.on('messageCreate', msg => {
 		}]})
 	//prefix
 	} else if (shortComp(msg,'prefix','pfx') && msg.content.split(' ')[1]){
-		if (!msg.member.permissions.has('MANAGE_SERVER')) {
+		if (!msg.member.permissions.has('MANAGE_GUILD')) {
                         msg.channel.send({
                                 embeds: [{
                                         color: 0xff0000,
-                                        description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_SERVER`'
+                                        description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_GUILD`'
                                 }]
                         })
 			return
@@ -405,17 +405,17 @@ client.on('messageCreate', msg => {
                 })
 
 	//image
-	} else if (shortComp(msg,'image','img') && msg.content.split(' ')[1]){
-		if (!msg.member.permissions.has('MANAGE_SERVER')) {
+	} else if (shortComp(msg,'image','img') && msg.content.split(' ')[1].substring(0,4) == 'http'){
+		if (!msg.member.permissions.has('MANAGE_GUILD')) {
                         msg.channel.send({
                                 embeds: [{
                                         color: 0xff0000,
-                                        description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_SERVER`'
+                                        description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_GUILD`'
                                 }]
                         })
 			return
                 }
-		stg.image = msg.content.split(' ')[1]
+		stg.image = msg.content.split(' ')[1].substring(0,200)
 		fs.writeFileSync('settings.json', JSON.stringify(stg));
 		msg.channel.send({
                 	embeds: [{
@@ -459,7 +459,20 @@ function changeActivity() {
 			type: 'PLAYING'
 		})
 	} else {
-		client.user.setActivity(splashes[Math.floor(Math.random() * splashes.length)], {
+		let rand = Math.floor(Math.random() * (splashes.length + 2))
+		let activity = ''
+		switch (rand){
+			case 0:
+				activity = `auf ${client.guilds.cache.size} Server${client.guilds.cache.size>1?'n':''}`
+				break;
+			case 1:
+				let d = new Date
+				activity = `es ist ${d.getHours()} Uhr und ${d.getMinutes()} Minuten`
+				break;
+			default:
+				activity = splashes[rand-2]
+		}
+		client.user.setActivity(activity, {
 			type: 'PLAYING'
 		})
 	}
