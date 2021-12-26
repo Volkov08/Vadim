@@ -164,7 +164,7 @@ client.on('messageCreate', msg => {
 						value: `${reason?`Grund: ${reason}\n`:'kein Grund angegeben'}`
 					}]
 				}]
-			}).catch(console.error).then(()=>{
+			}).catch(console.error).then(() => {
 				member.ban({
 					reason: reason
 				})
@@ -214,7 +214,7 @@ client.on('messageCreate', msg => {
 						value: `${reason?`Grund: ${reason}\n`:'kein Grund angegeben'}`
 					}]
 				}]
-			}).catch(console.error).then(()=> {
+			}).catch(console.error).then(() => {
 				member.kick({
 					reason: reason
 				})
@@ -222,62 +222,92 @@ client.on('messageCreate', msg => {
 		}
 		//list bans
 	} else if (shortComp(msg.content, 'listbans', 'lb')) {
-		 msg.guild.bans.fetch().then((b)=>{
-		const row = new Discord.MessageActionRow().addComponents([
-			new Discord.MessageButton({label:'<<',style:'SUCCESS',customId:'<<'}),
-			new Discord.MessageButton({label:'<',style:'PRIMARY',customId:'<'}),
-			new Discord.MessageButton({label:'>',style:'PRIMARY',customId:'>'}),
-			new Discord.MessageButton({label:'>>',style:'SUCCESS',customId:'>>'})
-		]);
+		msg.guild.bans.fetch().then((b) => {
+			const row = new Discord.MessageActionRow().addComponents([
+				new Discord.MessageButton({
+					label: '<<',
+					style: 'SUCCESS',
+					customId: '<<'
+				}),
+				new Discord.MessageButton({
+					label: '<',
+					style: 'PRIMARY',
+					customId: '<'
+				}),
+				new Discord.MessageButton({
+					label: '>',
+					style: 'PRIMARY',
+					customId: '>'
+				}),
+				new Discord.MessageButton({
+					label: '>>',
+					style: 'SUCCESS',
+					customId: '>>'
+				})
+			]);
 
-		msg.channel.send({embeds:[genBansEmbed(0,b,1)], components: [row] }).then((rsp)=>{
-		let page = 0
-		const queueNavFilter = (i) => {
-			return ['<<','<','>','>>'].includes(i.customId) && i.user.id === msg.author.id && i.message.id === rsp.id
-		};
-		const collector = rsp.channel.createMessageComponentCollector({ filter: queueNavFilter, time: 60000 });
+			msg.channel.send({
+				embeds: [genBansEmbed(0, b, 1)],
+				components: [row]
+			}).then((rsp) => {
+				let page = 0
+				const queueNavFilter = (i) => {
+					return ['<<', '<', '>', '>>'].includes(i.customId) && i.user.id === msg.author.id && i.message.id === rsp.id
+				};
+				const collector = rsp.channel.createMessageComponentCollector({
+					filter: queueNavFilter,
+					time: 60000
+				});
 
-		collector.on('collect', async i => {
-		switch (i.customId) {
-			case '<<':
-				page = 0
-				break;
-			case '<':
-				page = Math.max(page-1,0)
-				break;
-			case '>':
-				page = Math.min(page+1,Math.max(b.size-1,0))
-				break;
-			case '>>':
-				page = Math.max(b.size-8,0)
-			}
-			i.update({embeds:[genBansEmbed(page)]})
-		});
+				collector.on('collect', async i => {
+					switch (i.customId) {
+						case '<<':
+							page = 0
+							break;
+						case '<':
+							page = Math.max(page - 1, 0)
+							break;
+						case '>':
+							page = Math.min(page + 1, Math.max(b.size - 1, 0))
+							break;
+						case '>>':
+							page = Math.max(b.size - 8, 0)
+					}
+					i.update({
+						embeds: [genBansEmbed(page)]
+					})
+				});
 
-		collector.on('end', ()=>{rsp.edit({row:[]})});
-		 
-	})
-	})
+				collector.on('end', () => {
+					rsp.edit({
+						row: []
+					})
+				});
+
+			})
+		})
 	}
 })
 
-function genBansEmbed(page,bans,perpage=8){
+function genBansEmbed(page, bans, perpage = 8) {
 	let i = 0
 	let e = {
 		color: 0x00ff6e,
 		title: 'Liste aller gebannten Benutzer',
-		footer: {text:`seite ${page+1}/${Math.ceil(bans.size/perpage)}`},
+		footer: {
+			text: `seite ${page+1}/${Math.ceil(bans.size/perpage)}`
+		},
 		fields: []
 	}
-	for (const b of bans.values()){
-		if (i >= page*perpage && i < (page+1)*perpage){
-			console.log(b.user.tag,b.reason)
+	for (const b of bans.values()) {
+		if (i >= page * perpage && i < (page + 1) * perpage) {
+			console.log(b.user.tag, b.reason)
 			e.fields.push({
-				name:b.user.tag,
-				value:(b.reason?`Grund: ${b.reason}`:'kein Grund angegeben')
+				name: b.user.tag,
+				value: (b.reason ? `Grund: ${b.reason}` : 'kein Grund angegeben')
 			})
 		}
-		i ++
+		i++
 	}
 	return e
 }
