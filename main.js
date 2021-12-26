@@ -223,8 +223,40 @@ client.on('messageCreate', msg => {
 		//list bans
 	} else if (shortComp(msg.content, 'listbans', 'lb')) {
 		 msg.guild.bans.fetch().then((b)=>{
-		 	msg.channel.send({embeds:[genBansEmbed(0,b,1)]})
-		 })
+		const row = new Discord.MessageActionRow().addComponents([
+			new Discord.MessageButton({label:'<<',style:'SUCCESS',customId:'<<'}),
+			new Discord.MessageButton({label:'<',style:'PRIMARY',customId:'<'}),
+			new Discord.MessageButton({label:'>',style:'PRIMARY',customId:'>'}),
+			new Discord.MessageButton({label:'>>',style:'SUCCESS',customId:'>>'})
+		]);
+
+		msg.channel.send({embeds:[genBansEmbed(0,b,1)], components: [row] }).then((rsp)=>{
+		let page = 0
+		const queueNavFilter = (i) => {
+			return ['<<','<','>','>>'].includes(i.customId) && i.user.id === msg.author.id && i.message.id === rsp.id
+		};
+		const collector = rsp.channel.createMessageComponentCollector({ filter: queueNavFilter, time: 60000 });
+
+		collector.on('collect', async i => {
+		switch (i.customId) {
+			case '<<':
+				page = 0
+				break;
+			case '<':
+				page = Math.max(page-1,0)
+				break;
+			case '>':
+				page = Math.min(page+1,Math.max(b.size-1,0))
+				break;
+			case '>>':
+				page = Math.max(b.size-8,0)
+			}
+			i.update({embeds:[genBansEmbed(page)]})
+		});
+
+		collector.on('end', ()=>{rsp.edit({row:[]})});
+		 
+	})
 	}
 })
 
@@ -233,7 +265,7 @@ function genBansEmbed(page,bans,perpage=8){
 	let e = {
 		color: 0x00ff6e,
 		title: 'Liste aller gebannten Benutzer',
-		footer: `seite ${page+1}/${Math.ceil(bans.length/perpage)}`,
+		footer: {text:`seite ${page+1}/${Math.ceil(bans.size/perpage)}`},
 		fields: []
 	}
 	for (const b of bans.values()){
