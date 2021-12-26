@@ -257,6 +257,7 @@ client.on('messageCreate', msg => {
 		collector.on('end', ()=>{rsp.edit({row:[]})});
 		 
 	})
+	})
 	}
 })
 
