@@ -223,7 +223,7 @@ client.on('messageCreate', msg => {
 		//list bans
 	} else if (shortComp(msg.content, 'listbans', 'lb')) {
 		msg.guild.bans.fetch().then((b) => {
-			const row = b.size>8?new Discord.MessageActionRow().addComponents([
+			const row = b.size>6?new Discord.MessageActionRow().addComponents([
 				new Discord.MessageButton({
 					label: '<<',
 					style: 'SUCCESS',
@@ -249,8 +249,8 @@ client.on('messageCreate', msg => {
 			msg.channel.send({
 				embeds: [genBansEmbed(0, b, 1)],
 				//passing {} will cause error
-				components: b.size>8?[row]:undefined
-			}).then(b.size>8?(rsp) => {
+				components: b.size>6?[row]:undefined
+			}).then(b.size>6?(rsp) => {
 				let page = 0
 				const queueNavFilter = (i) => {
 					return ['<<', '<', '>', '>>'].includes(i.customId) && i.user.id === msg.author.id && i.message.id === rsp.id
@@ -269,10 +269,10 @@ client.on('messageCreate', msg => {
 							page = Math.max(page - 1, 0)
 							break;
 						case '>':
-							page = Math.min(page + 1, Math.max(Math.ceil(b.size/8) - 1, 0))
+							page = Math.min(page + 1, Math.max(Math.ceil(b.size/6) - 1, 0))
 							break;
 						case '>>':
-							page = Math.max(Math.ceil(b.size/8) - 1, 0)
+							page = Math.max(Math.ceil(b.size/6) - 1, 0)
 					}
 					i.update({
 						embeds: [genBansEmbed(page,b)]
@@ -287,24 +287,69 @@ client.on('messageCreate', msg => {
 
 			}:()=>{})
 		})
+	//unban
+	} else if (msg.content.split(" ")[0] == stg.prefix + 'unban' && msg.content.split(" ")[1]){
+		if (!msg.member.permissions.has('BAN_MEMBERS')) {
+                        msg.channel.send({
+                                embeds: [{
+                                        color: 0xff0000,
+                                        description: 'Befehl gescheitert: fehlende Berechtigung:\n`BAN_MEMBERS`'
+                                }]
+                        })
+			return
+                }
+		let opt = msg.content.split(" ")[1]
+		let callback = (uid)=>{
+			msg.guild.bans.remove(uid).then((u)=>{
+				msg.channel.send({embeds:[{
+                                        color:0x00ff6e,
+                                        fields:[{
+						name:'Befehl erfolgreich!',
+						value:`${u} ist nun nicht mehr gebannt`
+					}]
+                                }]})
+			}).catch((e)=>{
+				msg.channel.send({embeds:[{
+                                        color:0xff0000,
+                                        description: `Befehl gescheitert: User existiert entweder nicht oder ist nicht gebannt`
+                                }]})
+			})
+		}
+		if (opt.match(/^[0-9]+$/)){
+			callback(opt)
+		} else if (opt.match(/^\S+#[0-9]{4}/)){
+			msg.guild.bans.fetch().then((bans)=>{
+				for (const b of bans.values()){
+					if (b.user.tag == opt){
+						callback(b.user.id)
+						return
+					}
+				}
+				msg.channel.send({embeds:[{
+					color:0xff0000,
+					description: `Befehl gescheitert: User ${opt} existiert entweder nicht oder ist nicht gebannt`
+				}]})
+			})
+		}
 	}
 })
 
 function genBansEmbed(page, bans) {
 	let i = 0
+	if (bans.size == 0) return {color: 0x00ff6e,description: 'niemand ist gebannt'}
 	let e = {
 		color: 0x00ff6e,
 		title: 'Liste aller gebannten User',
 		footer: {
-			text: `insgesamt: ${bans.size} • Seite ${page+1}/${Math.ceil(bans.size/8)}`
+			text: `insgesamt: ${bans.size} • Seite ${page+1}/${Math.ceil(bans.size/6)}`
 		},
 		fields: []
 	}
 	for (const b of bans.values()) {
-		if (i >= page * 8 && i < (page + 1) * 8) {
+		if (i >= page * 6 && i < (page + 1) * 6) {
 			e.fields.push({
 				name: b.user.tag,
-				value: (b.reason ? `Grund: ${b.reason}` : 'kein Grund angegeben')
+				value: `${b.reason ? `Grund: ${b.reason}` : 'kein Grund angegeben'}\n--------`
 			})
 		}
 		i++
