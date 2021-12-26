@@ -76,7 +76,8 @@ client.on('messageCreate', msg => {
 						name: 'Moderation',
 						value: `\`${stg.prefix}purge #Nachrichten\` \`${stg.prefix}prg\` löscht \`#Nachrichten\` Nachrichten\n` +
 							`\`${stg.prefix}ban @User (<Grund>) \` bannt \`@User\` mit dem Grund \`<Grund>\`\n` +
-							`\`${stg.prefix}kick @User (<Grund>) \` kick \`@User\` mit dem Grund \`<Grund>\`\n`
+							`\`${stg.prefix}unban <UserTag>/#UseerID \` entbannt den User mit dem angegebenen Tag/der Angegebenen ID\n`
+							`\`${stg.prefix}kick @User (<Grund>) \` kickt \`@User\` mit dem Grund \`<Grund>\`\n`
 					},
 					{
 						name: 'Sonstige',
