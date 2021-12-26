@@ -22,7 +22,7 @@ client.once('ready', () => {
 	client.user.setActivity('ur mom', {
 		type: 'PLAYING'
 	})
-	setInterval(changeActivity,4000)
+	setInterval(changeActivity, 4000)
 })
 
 client.on('guildMemberAdd', member => {
@@ -62,8 +62,8 @@ client.on('messageCreate', async msg => {
 			}]
 		})
 
-  	//help
-  } else if (shortComp(msg.content, 'help', 'h')) {
+		//help
+	} else if (shortComp(msg.content, 'help', 'h')) {
 		msg.channel.send({
 			embeds: [{
 				title: 'Befehle:',
@@ -72,164 +72,173 @@ client.on('messageCreate', async msg => {
 					url: IMAGE_URL
 				},
 				description: '*`Befehl #Zahl <Text> @User (optional)` `Kurzform von Befehl`*\n',
-				fields: [
-					{
+				fields: [{
 						name: 'Moderation',
-						value: `\`${stg.prefix}purge #Nachrichten\` \`${stg.prefix}prg\` löscht \`#Nachrichten\` Nachrichten\n`+
-						`\`${stg.prefix}ban @User (<Grund>) \` bannt \`@User\` mit dem Grund \`<Grund>\`\n`+
-						`\`${stg.prefix}kick @User (<Grund>) \` kick \`@User\` mit dem Grund \`<Grund>\`\n`
+						value: `\`${stg.prefix}purge #Nachrichten\` \`${stg.prefix}prg\` löscht \`#Nachrichten\` Nachrichten\n` +
+							`\`${stg.prefix}ban @User (<Grund>) \` bannt \`@User\` mit dem Grund \`<Grund>\`\n` +
+							`\`${stg.prefix}kick @User (<Grund>) \` kick \`@User\` mit dem Grund \`<Grund>\`\n`
 					},
 					{
 						name: 'Sonstige',
 						value: `\`${stg.prefix}ping\` \`${stg.prefix}p\` zeigt den Ping Discord -> Bot an\n` +
-						`\`${stg.prefix}help\` \`${stg.prefix}h\` zeigt diese Nachricht an\n`
+							`\`${stg.prefix}help\` \`${stg.prefix}h\` zeigt diese Nachricht an\n`
 					}
 				]
 			}]
 		})
 
-	   //purge
+		//purge
 	} else if (shortComp(msg.content.split(" ")[0], 'purge', 'prg')) {
-    let amount = parseInt(msg.content.split(" ")[1])
-    if (!amount) return
-    if (amount > 100){
-      msg.channel.send({
-  			embeds: [{
-  				color: 0xff0000,
-  				description: 'Befel gescheitert:\nkann maximal 100 Nachrichten löschen'
-  			}]
-  		})
-    } else if (!msg.member.permissions.has('MANAGE_MESSAGES')){
-      msg.channel.send({
-  			embeds: [{
-  				color: 0xff0000,
-  				description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_MESSAGES`'
-  			}]
-  		})
-    } else {
-			amount //neue nachricht auch löschen
-			msg.channel.bulkDelete(amount+1,{filterOld:true})
+		let amount = parseInt(msg.content.split(" ")[1])
+		if (!amount) return
+		if (amount > 100) {
 			msg.channel.send({
-  			embeds: [{
-  				color: 0x00ff6e,
-  				fields: [{
+				embeds: [{
+					color: 0xff0000,
+					description: 'Befel gescheitert:\nkann maximal 100 Nachrichten löschen'
+				}]
+			})
+		} else if (!msg.member.permissions.has('MANAGE_MESSAGES')) {
+			msg.channel.send({
+				embeds: [{
+					color: 0xff0000,
+					description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_MESSAGES`'
+				}]
+			})
+		} else {
+			amount //neue nachricht auch löschen
+			msg.channel.bulkDelete(amount + 1, {
+				filterOld: true
+			})
+			msg.channel.send({
+				embeds: [{
+					color: 0x00ff6e,
+					fields: [{
 						name: `${amount} Nachricht${amount>1?'en':''} gelöscht`,
 						value: `*Befehl ausgeführt von ${msg.author}*`
 					}]
-  			}]
-  		})
+				}]
+			})
 		}
 
 		//ban
-  } else if (msg.content.split(" ")[0] == stg.prefix+'ban' && msg.mentions.members.size == 1){
+	} else if (msg.content.split(" ")[0] == stg.prefix + 'ban' && msg.mentions.members.size == 1) {
 		let member = msg.mentions.members.first()
-		let reason = msg.content.substring(msg.content.indexOf(">")+2)
-    if (member.id == msg.member.id){
-      msg.channel.send({
-  			embeds: [{
-  				color: 0xff0000,
-  				description: 'Befel gescheitert:\ndu kannst dich nicht selbst bannen'
-  			}]
-  		})
-    } else if (!msg.member.permissions.has('BAN_MEMBERS')){
-      msg.channel.send({
-  			embeds: [{
-  				color: 0xff0000,
-  				description: 'Befehl gescheitert: fehlende Berechtigung:\n`BAN_MEMBERS`'
-  			}]
-  		})
-    } else if (member.permissions.has('BAN_MEMBERS')){
-      msg.channel.send({
-  			embeds: [{
-  				color: 0xff0000,
-  				description: `Befehl gescheitert: du kannst ${member} nicht bannen`
-  			}]
-  		})
-    } else {
+		let reason = msg.content.substring(msg.content.indexOf(">") + 2)
+		if (member.id == msg.member.id) {
+			msg.channel.send({
+				embeds: [{
+					color: 0xff0000,
+					description: 'Befel gescheitert:\ndu kannst dich nicht selbst bannen'
+				}]
+			})
+		} else if (!msg.member.permissions.has('BAN_MEMBERS')) {
+			msg.channel.send({
+				embeds: [{
+					color: 0xff0000,
+					description: 'Befehl gescheitert: fehlende Berechtigung:\n`BAN_MEMBERS`'
+				}]
+			})
+		} else if (member.permissions.has('BAN_MEMBERS')) {
+			msg.channel.send({
+				embeds: [{
+					color: 0xff0000,
+					description: `Befehl gescheitert: du kannst ${member} nicht bannen`
+				}]
+			})
+		} else {
 			//neue nachricht auch löschen
 			msg.channel.send({
-  			embeds: [{
-  				color: 0x00ff6e,
-  				fields: [{
+				embeds: [{
+					color: 0x00ff6e,
+					fields: [{
 						name: `Befehl erfolgreich!`,
 						value: `**${member} wurde gebannt!**\n${reason?`Grund: ${reason}\n`:''}*Befehl ausgeführt von ${msg.author}*`
 					}]
-  			}]
-  		})
+				}]
+			})
 			await member.send({
-              embeds: [{
-                  color: 0xff0000,
-                  fields: [{
-                        name: `Du wurdest von ${member.guild.name} gebannt!`,
-                        value: `${reason?`Grund: ${reason}\n`:'kein Grund angegeben'}`
-                    }]
-              }]
-      }).catch(console.error)
-			member.ban({reason:reason})
+				embeds: [{
+					color: 0xff0000,
+					fields: [{
+						name: `Du wurdest von ${member.guild.name} gebannt!`,
+						value: `${reason?`Grund: ${reason}\n`:'kein Grund angegeben'}`
+					}]
+				}]
+			}).catch(console.error)
+			member.ban({
+				reason: reason
+			})
 		}
 
-	//kick
-	}  else if (msg.content.split(" ")[0] == stg.prefix+'kick' && msg.mentions.members.size == 1){
+		//kick
+	} else if (msg.content.split(" ")[0] == stg.prefix + 'kick' && msg.mentions.members.size == 1) {
 		let member = msg.mentions.members.first()
-		let reason = msg.content.substring(msg.content.indexOf(">")+2)
-    if (member.id == msg.member.id){
-      msg.channel.send({
-  			embeds: [{
-  				color: 0xff0000,
-  				description: 'Befel gescheitert:\ndu kannst dich nicht selbst kicken'
-  			}]
-  		})
-    } else if (!msg.member.permissions.has('KICK_MEMBERS')){
-      msg.channel.send({
-  			embeds: [{
-  				color: 0xff0000,
-  				description: 'Befehl gescheitert: fehlende Berechtigung:\n`KICK_MEMBERS`'
-  			}]
-  		})
-    } else if (member.permissions.has('KICK_MEMBERS')){
-      msg.channel.send({
-  			embeds: [{
-  				color: 0xff0000,
-  				description: `Befehl gescheitert: du kannst ${member} nicht kicken`
-  			}]
-  		})
-    } else {
+		let reason = msg.content.substring(msg.content.indexOf(">") + 2)
+		if (member.id == msg.member.id) {
 			msg.channel.send({
-  			embeds: [{
-  				color: 0x00ff6e,
-  				fields: [{
+				embeds: [{
+					color: 0xff0000,
+					description: 'Befel gescheitert:\ndu kannst dich nicht selbst kicken'
+				}]
+			})
+		} else if (!msg.member.permissions.has('KICK_MEMBERS')) {
+			msg.channel.send({
+				embeds: [{
+					color: 0xff0000,
+					description: 'Befehl gescheitert: fehlende Berechtigung:\n`KICK_MEMBERS`'
+				}]
+			})
+		} else if (member.permissions.has('KICK_MEMBERS')) {
+			msg.channel.send({
+				embeds: [{
+					color: 0xff0000,
+					description: `Befehl gescheitert: du kannst ${member} nicht kicken`
+				}]
+			})
+		} else {
+			msg.channel.send({
+				embeds: [{
+					color: 0x00ff6e,
+					fields: [{
 						name: `Befehl erfolgreich!`,
 						value: `**${member} wurde gekickt!**\n${reason?`Grund: ${reason}\n`:''}*Befehl ausgeführt von ${msg.author}*`
 					}]
-  			}]
-  		})
+				}]
+			})
 			await member.send({
-  			embeds: [{
-  				color: 0xffea00,
-  				fields: [{
+				embeds: [{
+					color: 0xffea00,
+					fields: [{
 						name: `Du wurdest von ${member.guild.name} gekickt!`,
 						value: `${reason?`Grund: ${reason}\n`:'kein Grund angegeben'}`
 					}]
-  			}]
-  		}).catch(console.error)
-			member.kick({reason:reason})
+				}]
+			}).catch(console.error)
+			member.kick({
+				reason: reason
+			})
 		}
-	//list bans
-	} else if (shortComp(msg.content,'listbans','lb')) {
+		//list bans
+	} else if (shortComp(msg.content, 'listbans', 'lb')) {
 		msg.guild.bans.fetch().then(console.log)
 	}
 })
 
 var a = false;
-const splashes = ["ur mom","sqrt(-1) am cool!","6 ist perfekt!","warum hat das Hünchen die straße überquert?","12345678910987654321 ist eine Primzahl!"]
+const splashes = ["ur mom", "sqrt(-1) am cool!", "6 ist perfekt!", "warum hat das Hünchen die straße überquert?", "12345678910987654321 ist eine Primzahl!"]
 
 function changeActivity() {
-	if (a){
-		client.user.setActivity(`prefix: ${stg.prefix}`, { type: 'PLAYING' })
+	if (a) {
+		client.user.setActivity(`prefix: ${stg.prefix}`, {
+			type: 'PLAYING'
+		})
 	} else {
-		client.user.setActivity(splashes[Math.floor(Math.random()*splashes.length)], { type: 'PLAYING' })
+		client.user.setActivity(splashes[Math.floor(Math.random() * splashes.length)], {
+			type: 'PLAYING'
+		})
 	}
- 	a = !a
+	a = !a
 }
 
 client.login(BOT_TOKEN)
