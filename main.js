@@ -48,7 +48,7 @@ client.on('guildMemberAdd', member => {
 	});
 });
 
-client.on('messageCreate', async msg => {
+client.on('messageCreate', msg => {
 	if (msg.author.bot) return
 	console.log(msg)
 	//commands
@@ -106,7 +106,6 @@ client.on('messageCreate', async msg => {
 				}]
 			})
 		} else {
-			amount //neue nachricht auch löschen
 			msg.channel.bulkDelete(amount + 1, {
 				filterOld: true
 			})
@@ -157,7 +156,7 @@ client.on('messageCreate', async msg => {
 					}]
 				}]
 			})
-			await member.send({
+			member.send({
 				embeds: [{
 					color: 0xff0000,
 					fields: [{
@@ -165,9 +164,10 @@ client.on('messageCreate', async msg => {
 						value: `${reason?`Grund: ${reason}\n`:'kein Grund angegeben'}`
 					}]
 				}]
-			}).catch(console.error)
-			member.ban({
-				reason: reason
+			}).catch(console.error).then(()=>{
+				member.ban({
+					reason: reason
+				})
 			})
 		}
 
@@ -206,7 +206,7 @@ client.on('messageCreate', async msg => {
 					}]
 				}]
 			})
-			await member.send({
+			member.send({
 				embeds: [{
 					color: 0xffea00,
 					fields: [{
@@ -214,16 +214,40 @@ client.on('messageCreate', async msg => {
 						value: `${reason?`Grund: ${reason}\n`:'kein Grund angegeben'}`
 					}]
 				}]
-			}).catch(console.error)
-			member.kick({
-				reason: reason
+			}).catch(console.error).then(()=> {
+				member.kick({
+					reason: reason
+				})
 			})
 		}
 		//list bans
 	} else if (shortComp(msg.content, 'listbans', 'lb')) {
-		msg.guild.bans.fetch().then(console.log)
+		 msg.guild.bans.fetch().then((b)=>{
+		 	msg.channel.send({embeds:[genBansEmbed(0,b,1)]})
+		 })
 	}
 })
+
+function genBansEmbed(page,bans,perpage=8){
+	let i = 0
+	let e = {
+		color: 0x00ff6e,
+		title: 'Liste aller gebannten Benutzer',
+		footer: `seite ${page+1}/${Math.ceil(bans.length/perpage)}`,
+		fields: []
+	}
+	for (const b of bans.values()){
+		if (i >= page*perpage && i < (page+1)*perpage){
+			console.log(b.user.tag,b.reason)
+			e.fields.push({
+				name:b.user.tag,
+				value:(b.reason?`Grund: ${b.reason}`:'kein Grund angegeben')
+			})
+		}
+		i ++
+	}
+	return e
+}
 
 var a = false;
 const splashes = ["ur mom", "sqrt(-1) am cool!", "6 ist perfekt!", "warum hat das Hünchen die straße überquert?", "12345678910987654321 ist eine Primzahl!"]
