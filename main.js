@@ -3,56 +3,78 @@ const Discord = require('discord.js');
 
 const BOT_TOKEN = JSON.parse(fs.readFileSync('tokens.json')).bot
 
-const client = new Discord.Client({
-	partials: ['USER', 'GUILD_MEMBER', 'MESSAGE', 'CHANNEL', 'REACTION'],
-	intents: ['GUILDS', 'GUILD_MEMBERS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS']
-})
 var stg = JSON.parse(fs.readFileSync('settings.json'));
-const shortComp = (m, l, s=null) => {
-	return m.content.split(' ')[0] == stg.prefix + l || (s && m.content.split(' ')[0] == stg.prefix + s)
+const shortComp = (m, p, l, s=null) => {
+	return m.content.split(' ')[0] == p + l || (s && m.content.split(' ')[0] == p + s)
 }
 
 const WELCOME_CHANNEL = '922934040611405844'
 const SERVER_ID = '830870811816099941'
-const IMAGE_URL = 'https://media.discordapp.net/attachments/815916673961426994/921741709421969450/RickAstley2021.jpeg?width=1392&height=884'
 const WELCOME_COLORS = [0xff0000, 0xff9100, 0xfbff00, 0x00ff37, 0x00ffd5, 0x0073ff, 0x8000ff, 0xff0084]
+const IMAGE_URL = 'https://media.discordapp.net/attachments/815916673961426994/921741709421969450/RickAstley2021.jpeg?width=1392&height=884'
 
-client.once('ready', () => {
-	console.log(`Logged in as ${client.user.tag}!`)
-	client.user.setActivity('bin da!', {
-		type: 'PLAYING'
-	})
-	setInterval(changeActivity, 5000)
-})
-
-client.on('guildMemberAdd', member => {
-	if (member.guild.id != SERVER_ID) return
-	member.guild.channels.fetch(WELCOME_CHANNEL).then(c => {
-		c.send({
-			content: `${member}`,
-			embeds: [{
-				title: `Willkommen ${member.displayName}!`,
-				description: `Willkommen bei ${member.guild.name}`,
-				color: WELCOME_COLORS[Math.floor(Math.random() * WELCOME_COLORS.length)],
-				thumbnail: {
-					url: member.displayAvatarURL({
-						format: 'png',
-						size: 512
-					})
-				},
-				image: {
-					url: stg.image
-				}
-			}]
+class Bot {
+	constructor(token,settings){
+		this.settings = settings
+		this.client = new Discord.Client({
+			partials: ['USER', 'GUILD_MEMBER', 'MESSAGE', 'CHANNEL', 'REACTION'],
+			intents: ['GUILDS', 'GUILD_MEMBERS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS']
 		})
-	});
-});
 
-client.on('messageCreate', msg => {
+		this.client.once('ready', () => {
+			console.log(`Logged in as ${this.client.user.tag}!`)
+			this.client.user.setActivity('bin da!', {
+				type: 'PLAYING'
+			})
+			//setInterval(changeActivity, 5000)
+		})
+
+		this.client.on('guildMemberAdd', member => {
+			if (member.guild.id != SERVER_ID) return
+			member.guild.channels.fetch(WELCOME_CHANNEL).then(c => {
+				c.send({
+					content: `${member}`,
+					embeds: [{
+						title: `Willkommen ${member.displayName}!`,
+						description: `Willkommen bei ${member.guild.name}`,
+						color: WELCOME_COLORS[Math.floor(Math.random() * WELCOME_COLORS.length)],
+						thumbnail: {
+							url: member.displayAvatarURL({
+								format: 'png',
+								size: 512
+							})
+						},
+						image: {
+							url: stg.image
+						}
+					}]
+				})
+			});
+		});
+
+		this.client.on('messageCreate', (msg)=>{
+			let r = respond(msg,this.stg.prefix)
+			if (r){
+				console.log('change: '+r)
+			}
+		})
+		this.client.login(token)
+	}
+}
+
+
+
+
+
+
+
+
+
+function respond(msg,prefix) {
 	if (msg.author.bot) return
 	//commands
 	//ping
-	if (shortComp(msg, 'ping', 'p')) {
+	if (shortComp(msg, prefix , 'ping', 'p')) {
 		let ping = Date.now() - msg.createdAt
 		msg.channel.send({
 			embeds: [{
@@ -62,7 +84,7 @@ client.on('messageCreate', msg => {
 		})
 
 		//help
-	} else if (shortComp(msg, 'help', 'h')) {
+	} else if (shortComp(msg, prefix, 'help', 'h')) {
 		msg.channel.send({
 			embeds: [{
 				title: 'Befehle:',
@@ -72,17 +94,17 @@ client.on('messageCreate', msg => {
 				},
 				description: '*`Befehl #Zahl <Text> @User (optional)` `Kurzform von Befehl`*\n',
 				fields: [
-                                        {
-                                                name: 'Einstellungen',
-                                                value: `\`${stg.prefix}prefix <Prefix>\` \`${stg.prefix}pfx\` ändert den Prefix auf \`<Prefix>\`\n` +
-                                                        `\`${stg.prefix}image <BildURL>\` \`${stg.prefix}img\` ändert das Willkommensbild auf \`<BildURL>\`. URL muss mit http oder https beginnen und darf maximal 200 zeichen lang sein\n`
-                                        },
+																				{
+																								name: 'Einstellungen',
+																								value: `\`${stg.prefix}prefix <Prefix>\` \`${stg.prefix}pfx\` ändert den Prefix auf \`<Prefix>\`\n` +
+																												`\`${stg.prefix}image <BildURL>\` \`${stg.prefix}img\` ändert das Willkommensbild auf \`<BildURL>\`. URL muss mit http oder https beginnen und darf maximal 200 zeichen lang sein\n`
+																				},
 					{
 						name: 'Moderation',
 						value: `\`${stg.prefix}purge #Nachrichten\` \`${stg.prefix}prg\` löscht \`#Nachrichten\` Nachrichten\n` +
 							`\`${stg.prefix}ban @User (<Grund>) \` bannt \`@User\` mit dem Grund \`<Grund>\`\n` +
 							`\`${stg.prefix}unban <UserTag>/#UserID \` entbannt den User mit dem angegebenen Tag/der Angegebenen ID\n` +
-                                                	 `\`${stg.prefix}listbans\` \`${stg.prefix}lb\` listet alle gebannten User auf\n` +
+																									 `\`${stg.prefix}listbans\` \`${stg.prefix}lb\` listet alle gebannten User auf\n` +
 							`\`${stg.prefix}kick @User (<Grund>) \` kickt \`@User\` mit dem Grund \`<Grund>\`\n`
 					},
 					{
@@ -95,7 +117,7 @@ client.on('messageCreate', msg => {
 		})
 
 		//purge
-	} else if (shortComp(msg, 'purge', 'prg')) {
+	} else if (shortComp(msg, prefix, 'purge', 'prg')) {
 		let amount = parseInt(msg.content.split(" ")[1])
 		if (!amount) return
 		if (amount > 100) {
@@ -128,7 +150,7 @@ client.on('messageCreate', msg => {
 		}
 
 		//ban
-	} else if (shortComp(msg,'ban') && msg.mentions.members.size == 1) {
+	} else if (shortComp(msg, prefix,'ban') && msg.mentions.members.size == 1) {
 		let member = msg.mentions.members.first()
 		let reason = msg.content.substring(msg.content.indexOf(">") + 2)
 		if (member.id == msg.member.id) {
@@ -179,7 +201,7 @@ client.on('messageCreate', msg => {
 		}
 
 		//kick
-	} else if (shortComp(msg,'kick') && msg.mentions.members.size == 1) {
+	} else if (shortComp(msg, prefix,'kick') && msg.mentions.members.size == 1) {
 		let member = msg.mentions.members.first()
 		let reason = msg.content.substring(msg.content.indexOf(">") + 2)
 		if (member.id == msg.member.id) {
@@ -228,7 +250,7 @@ client.on('messageCreate', msg => {
 			})
 		}
 		//list bans
-	} else if (shortComp(msg, 'listbans', 'lb')) {
+	} else if (shortComp(msg, prefix, 'listbans', 'lb')) {
 		msg.guild.bans.fetch().then((b) => {
 			const row = b.size>6?new Discord.MessageActionRow().addComponents([
 				new Discord.MessageButton({
@@ -295,31 +317,31 @@ client.on('messageCreate', msg => {
 			}:()=>{})
 		})
 	//unban
-	} else if (shortComp(msg,'unban') && msg.content.split(" ")[1]){
+	} else if (shortComp(msg, prefix,'unban') && msg.content.split(" ")[1]){
 		if (!msg.member.permissions.has('BAN_MEMBERS')) {
-                        msg.channel.send({
-                                embeds: [{
-                                        color: 0xff0000,
-                                        description: 'Befehl gescheitert: fehlende Berechtigung:\n`BAN_MEMBERS`'
-                                }]
-                        })
+												msg.channel.send({
+																embeds: [{
+																				color: 0xff0000,
+																				description: 'Befehl gescheitert: fehlende Berechtigung:\n`BAN_MEMBERS`'
+																}]
+												})
 			return
-                }
+								}
 		let opt = msg.content.split(" ")[1]
 		let callback = (uid)=>{
 			msg.guild.bans.remove(uid).then((u)=>{
 				msg.channel.send({embeds:[{
-                                        color:0x00ff6e,
-                                        fields:[{
+																				color:0x00ff6e,
+																				fields:[{
 						name:'Befehl erfolgreich!',
 						value:`${u} ist nun nicht mehr gebannt`
 					}]
-                                }]})
+																}]})
 			}).catch((e)=>{
 				msg.channel.send({embeds:[{
-                                        color:0xff0000,
-                                        description: `Befehl gescheitert: User existiert entweder nicht oder ist nicht gebannt`
-                                }]})
+																				color:0xff0000,
+																				description: `Befehl gescheitert: User existiert entweder nicht oder ist nicht gebannt`
+																}]})
 			})
 		}
 		if (opt.match(/^[0-9]+$/)){
@@ -338,15 +360,15 @@ client.on('messageCreate', msg => {
 				}]})
 			})
 		}
-	} else if (shortComp(msg,'userinfo','ui') && msg.mentions.members.size == 1) {
+	} else if (shortComp(msg, prefix,'userinfo','ui') && msg.mentions.members.size == 1) {
 		let member = msg.mentions.members.first()
 		msg.channel.send({embeds:[{
 			color: member.roles.color?member.roles.color.color:0,
 			description:`**Info über ${member}**`,
 			thumbnail: {
-                                        url: member.displayAvatarURL({
-                                                format: 'png',
-                                                size: 512
+																				url: member.displayAvatarURL({
+																								format: 'png',
+																								size: 512
 					})
 			},
 			fields:[
@@ -381,51 +403,53 @@ client.on('messageCreate', msg => {
 				{
 					name:'Server booster',
 					value:member.premiumSince?(`seit ${member.premiumSince}`):'Nein'
-				},	
+				},
 			]
 		}]})
 	//prefix
-	} else if (shortComp(msg,'prefix','pfx') && msg.content.split(' ')[1]){
+	} else if (shortComp(msg, prefix,'prefix','pfx') && msg.content.split(' ')[1]){
 		if (!msg.member.permissions.has('MANAGE_GUILD')) {
-                        msg.channel.send({
-                                embeds: [{
-                                        color: 0xff0000,
-                                        description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_GUILD`'
-                                }]
-                        })
+												msg.channel.send({
+																embeds: [{
+																				color: 0xff0000,
+																				description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_GUILD`'
+																}]
+												})
 			return
-                }
-		stg.prefix = msg.content.split(' ')[1]	
+								}
+		stg.prefix = msg.content.split(' ')[1]
 		fs.writeFileSync('settings.json', JSON.stringify(stg));
 		msg.channel.send({
-                	embeds: [{
-                        	color: 0x00ff6e,
-                        	description: `neuer prefix: ${stg.prefix}`        
+									embeds: [{
+													color: 0x00ff6e,
+													description: `neuer prefix: ${stg.prefix}`
 			}]
-                })
+								})
 
 	//image
-	} else if (shortComp(msg,'image','img') && msg.content.split(' ')[1].substring(0,4) == 'http'){
+	} else if (shortComp(msg, prefix,'image','img') && msg.content.split(' ')[1].substring(0,4) == 'http'){
 		if (!msg.member.permissions.has('MANAGE_GUILD')) {
-                        msg.channel.send({
-                                embeds: [{
-                                        color: 0xff0000,
-                                        description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_GUILD`'
-                                }]
-                        })
+												msg.channel.send({
+																embeds: [{
+																				color: 0xff0000,
+																				description: 'Befehl gescheitert: fehlende Berechtigung:\n`MANAGE_GUILD`'
+																}]
+												})
 			return
-                }
+								}
 		stg.image = msg.content.split(' ')[1].substring(0,200)
 		fs.writeFileSync('settings.json', JSON.stringify(stg));
 		msg.channel.send({
-                	embeds: [{
-                        	color: 0x00ff6e,
-                        	title: 'neues Willkommensbild',
+									embeds: [{
+													color: 0x00ff6e,
+													title: 'neues Willkommensbild',
 				image: {url: stg.image}
 			}]
-                })
+								})
 	}
-})
+}
+
+let bot = new Bot(BOT_TOKEN,{})
 
 function genBansEmbed(page, bans) {
 	let i = 0
@@ -452,7 +476,7 @@ function genBansEmbed(page, bans) {
 
 var a = false;
 const splashes = ["ur mom", "sqrt(-1) am cool!", "6 ist perfekt!", "warum hat das Hünchen die straße überquert?", "12345678910987654321 ist eine Primzahl!"]
-
+/*
 function changeActivity() {
 	if (a) {
 		client.user.setActivity(`prefix: ${stg.prefix}`, {
@@ -477,6 +501,4 @@ function changeActivity() {
 		})
 	}
 	a = !a
-}
-
-client.login(BOT_TOKEN)
+}*/
