@@ -1,5 +1,6 @@
 const fs = require('fs');
 const Discord = require('discord.js');
+const https = require('https');
 
 const BOTCONFIG = JSON.parse(fs.readFileSync('botconfig.json'))
 const DEFAULT_BOT_SETTINGS = JSON.parse(fs.readFileSync('defaultsettings.json'))
@@ -86,9 +87,6 @@ class Bot {
 		}
 	}
 }
-
-
-
 
 function respond(msg, prefix, image) {
     if (msg.author.bot) return
