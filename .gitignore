@@ -107,4 +107,7 @@ dist
 .DS_Store
 
 #token
-tokens.json
+botconfig.json
+
+#settings
+settings.json

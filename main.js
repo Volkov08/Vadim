@@ -1,37 +1,38 @@
 const fs = require('fs');
 const Discord = require('discord.js');
 
-const BOT_TOKEN = JSON.parse(fs.readFileSync('tokens.json')).bot
+const BOTCONFIG = JSON.parse(fs.readFileSync('botconfig.json'))
+const DEFAULT_BOT_SETTINGS = JSON.parse(fs.readFileSync('defaultsettings.json'))
+const WELCOME_COLORS = [0xff0000, 0xff9100, 0xfbff00, 0x00ff37, 0x00ffd5, 0x0073ff, 0x8000ff, 0xff0084]
+var settings = JSON.parse(fs.readFileSync('settings.json'));
 
-var stg = JSON.parse(fs.readFileSync('settings.json'));
 const shortComp = (m, p, l, s = null) => {
     return m.content.split(' ')[0] == p + l || (s && m.content.split(' ')[0] == p + s)
 }
-
-const WELCOME_CHANNEL = '922934040611405844'
-const SERVER_ID = '830870811816099941'
-const WELCOME_COLORS = [0xff0000, 0xff9100, 0xfbff00, 0x00ff37, 0x00ffd5, 0x0073ff, 0x8000ff, 0xff0084]
-const IMAGE_URL = 'https://media.discordapp.net/attachments/815916673961426994/921741709421969450/RickAstley2021.jpeg?width=1392&height=884'
+const updateStg = (botSettings,BOT_ID) => {
+	settings[BOT_ID]=botSettings
+	fs.writeFileSync('settings.json', JSON.stringify(settings));
+}
 
 class Bot {
-    constructor(token, settings) {
-        this.settings = settings
+    constructor(token, settings, config) {
+        this.stg = settings
+		this.cfg = config
         this.client = new Discord.Client({
             partials: ['USER', 'GUILD_MEMBER', 'MESSAGE', 'CHANNEL', 'REACTION'],
             intents: ['GUILDS', 'GUILD_MEMBERS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS']
         })
 
         this.client.once('ready', () => {
-            console.log(`Logged in as ${this.client.user.tag}!`)
-            this.client.user.setActivity('bin da!', {
+            console.log(`[${this.cfg.BOT_ID}] Logged in as ${this.client.user.tag}!`)
+            this.client.user.setActivity(`prefix: ${this.stg.prefix}`, {
                 type: 'PLAYING'
             })
-            //setInterval(changeActivity, 5000)
         })
 
         this.client.on('guildMemberAdd', member => {
-            if (member.guild.id != SERVER_ID) return
-            member.guild.channels.fetch(WELCOME_CHANNEL).then(c => {
+            if (member.guild.id != this.cfg.SERVER_ID) return
+            member.guild.channels.fetch(this.cfg.WELCOME_CHANNEL).then(c => {
                 c.send({
                     content: `${member}`,
                     embeds: [{
@@ -45,7 +46,7 @@ class Bot {
                             })
                         },
                         image: {
-                            url: stg.image
+                            url: this.stg.image
                         }
                     }]
                 })
@@ -53,19 +54,43 @@ class Bot {
         });
 
         this.client.on('messageCreate', (msg) => {
-            let r = respond(msg, this.stg.prefix)
-            if (r) {
-                console.log('change: ' + r)
+            let changes = respond(msg, this.stg.prefix, this.stg.image)
+            if (changes) {
+                console.log(`[${this.cfg.BOT_ID}] changes: `)
+				console.log(changes)
+				this.stg[changes.type] = changes.value
+				updateStg(this.stg,this.cfg.BOT_ID)
             }
         })
         this.client.login(token)
     }
+	changeActivity(a,splashes) {
+		if (a) {
+			this.client.user.setActivity(`prefix: ${this.stg.prefix}`, {
+				type: 'PLAYING'
+			})
+		} else {
+			let rand = Math.floor(Math.random() * (splashes.length + 1))
+			let activity = ''
+			switch (rand){
+				case 0:
+					let d = new Date
+					activity = `es ist ${d.getHours()} Uhr und ${d.getMinutes()} Minuten`
+					break;
+				default:
+					activity = splashes[rand-1]
+			}
+			this.client.user.setActivity(activity, {
+				type: 'PLAYING'
+			})
+		}
+	}
 }
 
 
 
 
-function respond(msg, prefix) {
+function respond(msg, prefix, image) {
     if (msg.author.bot) return
     //commands
     //ping
@@ -85,26 +110,26 @@ function respond(msg, prefix) {
                 title: 'Befehle:',
                 color: 0x00ff6e,
                 thumbnail: {
-                    url: IMAGE_URL
+                    url: image
                 },
                 description: '*`Befehl #Zahl <Text> @User (optional)` `Kurzform von Befehl`*\n',
                 fields: [{
                         name: 'Einstellungen',
-                        value: `\`${stg.prefix}prefix <Prefix>\` \`${stg.prefix}pfx\` ändert den Prefix auf \`<Prefix>\`\n` +
-                            `\`${stg.prefix}image <BildURL>\` \`${stg.prefix}img\` ändert das Willkommensbild auf \`<BildURL>\`. URL muss mit http oder https beginnen und darf maximal 200 zeichen lang sein\n`
+                        value: `\`${prefix}prefix <Prefix>\` \`${prefix}pfx\` ändert den Prefix auf \`<Prefix>\`\n` +
+                            `\`${prefix}image <BildURL>\` \`${prefix}img\` ändert das Willkommensbild auf \`<BildURL>\`. URL muss mit http oder https beginnen und darf maximal 200 zeichen lang sein\n`
                     },
                     {
                         name: 'Moderation',
-                        value: `\`${stg.prefix}purge #Nachrichten\` \`${stg.prefix}prg\` löscht \`#Nachrichten\` Nachrichten\n` +
-                            `\`${stg.prefix}ban @User (<Grund>) \` bannt \`@User\` mit dem Grund \`<Grund>\`\n` +
-                            `\`${stg.prefix}unban <UserTag>/#UserID \` entbannt den User mit dem angegebenen Tag/der Angegebenen ID\n` +
-                            `\`${stg.prefix}listbans\` \`${stg.prefix}lb\` listet alle gebannten User auf\n` +
-                            `\`${stg.prefix}kick @User (<Grund>) \` kickt \`@User\` mit dem Grund \`<Grund>\`\n`
+                        value: `\`${prefix}purge #Nachrichten\` \`${prefix}prg\` löscht \`#Nachrichten\` Nachrichten\n` +
+                            `\`${prefix}ban @User (<Grund>) \` bannt \`@User\` mit dem Grund \`<Grund>\`\n` +
+                            `\`${prefix}unban <UserTag>/#UserID \` entbannt den User mit dem angegebenen Tag/der Angegebenen ID\n` +
+                            `\`${prefix}listbans\` \`${prefix}lb\` listet alle gebannten User auf\n` +
+                            `\`${prefix}kick @User (<Grund>) \` kickt \`@User\` mit dem Grund \`<Grund>\`\n`
                     },
                     {
                         name: 'Sonstige',
-                        value: `\`${stg.prefix}ping\` \`${stg.prefix}p\` zeigt den Ping Discord -> Bot an\n` +
-                            `\`${stg.prefix}help\` \`${stg.prefix}h\` zeigt diese Nachricht an\n`
+                        value: `\`${prefix}ping\` \`${prefix}p\` zeigt den Ping Discord -> Bot an\n` +
+                            `\`${prefix}help\` \`${prefix}h\` zeigt diese Nachricht an\n`
                     }
                 ]
             }]
@@ -418,17 +443,18 @@ function respond(msg, prefix) {
             })
             return
         }
-        stg.prefix = msg.content.split(' ')[1]
-        fs.writeFileSync('settings.json', JSON.stringify(stg));
+        let newPrefix = msg.content.split(' ')[1]
         msg.channel.send({
             embeds: [{
                 color: 0x00ff6e,
-                description: `neuer prefix: ${stg.prefix}`
+                description: `neuer prefix: ${newPrefix}`
             }]
         })
-
+		return {type:"prefix",value:newPrefix}
+		
+        //fs.writeFileSync('settings.json', JSON.stringify(stg));
         //image
-    } else if (shortComp(msg, prefix, 'image', 'img') && msg.content.split(' ')[1].substring(0, 4) == 'http') {
+    } else if (shortComp(msg, prefix, 'image', 'img') && msg.content.split(' ').length == 2 && msg.content.split(' ')[1].substring(0, 4) == 'http') {
         if (!msg.member.permissions.has('MANAGE_GUILD')) {
             msg.channel.send({
                 embeds: [{
@@ -438,21 +464,19 @@ function respond(msg, prefix) {
             })
             return
         }
-        stg.image = msg.content.split(' ')[1].substring(0, 200)
-        fs.writeFileSync('settings.json', JSON.stringify(stg));
+        newImage = msg.content.split(' ')[1].substring(0, 200)
         msg.channel.send({
             embeds: [{
                 color: 0x00ff6e,
                 title: 'neues Willkommensbild',
                 image: {
-                    url: stg.image
+                    url: newImage
                 }
             }]
         })
+		return {type:"image",value:newImage}
     }
 }
-
-let bot = new Bot(BOT_TOKEN, {})
 
 function genBansEmbed(page, bans) {
     let i = 0
@@ -480,31 +504,34 @@ function genBansEmbed(page, bans) {
     return e
 }
 
-var a = false;
-const splashes = ["ur mom", "sqrt(-1) am cool!", "6 ist perfekt!", "warum hat das Hünchen die straße überquert?", "12345678910987654321 ist eine Primzahl!"]
-/*
-function changeActivity() {
-	if (a) {
-		client.user.setActivity(`prefix: ${stg.prefix}`, {
-			type: 'PLAYING'
-		})
-	} else {
-		let rand = Math.floor(Math.random() * (splashes.length + 2))
-		let activity = ''
-		switch (rand){
-			case 0:
-				activity = `auf ${client.guilds.cache.size} Server${client.guilds.cache.size>1?'n':''}`
-				break;
-			case 1:
-				let d = new Date
-				activity = `es ist ${d.getHours()} Uhr und ${d.getMinutes()} Minuten`
-				break;
-			default:
-				activity = splashes[rand-2]
-		}
-		client.user.setActivity(activity, {
-			type: 'PLAYING'
-		})
+var ACTIVITY_PREFIX = false;
+const ACTIVITY_SPLASHES = ["ur mom", "sqrt(-1) am cool!", "6 ist perfekt!", "warum hat das Hünchen die straße überquert?", "12345678910987654321 ist eine Primzahl!"]
+function changeActivityAll(B){
+	for (let i = 0; i < B.length; i++){
+		B[i].changeActivity(ACTIVITY_PREFIX,ACTIVITY_SPLASHES)
 	}
-	a = !a
-}*/
+	ACTIVITY_PREFIX = !ACTIVITY_PREFIX
+}
+
+function initBots(){
+	let B = []
+	let alteredSettings = false
+	for (let i = 0; i < BOTCONFIG.bots.length; i ++){
+		let botid = BOTCONFIG.bots[i].CONFIG.BOT_ID
+		console.log("Initializing bot: "+botid)
+		if (!settings[botid]){
+			console.log("No settings found, creating default")
+			settings[botid]=DEFAULT_BOT_SETTINGS
+			alteredSettings=true
+		}
+		B.push(new Bot(BOTCONFIG.bots[i].TOKEN, settings[botid], BOTCONFIG.bots[i].CONFIG))
+	}
+	if (alteredSettings){
+		fs.writeFileSync('settings.json', JSON.stringify(settings));
+	}
+	return B
+}
+
+
+var BOTS = initBots()
+setInterval(()=>{changeActivityAll(BOTS)},8000)
